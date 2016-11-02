@@ -8,11 +8,11 @@ import time
 # INITIALIZE REDIS and SET CONSTANTS
 ########################################
 
-TOLERANCE_THRESHOLD = 20
-PASS_CODES = {200,201}
-FAIL_CODES = {502,503,504}
+TOLERANCE_THRESHOLD = 70
+PASS_CODES = {200, 201}
+FAIL_CODES = {502, 503, 504}
 IGNORE_CODES = {410}
-
+ITERATIONS = 3
 redisDB = redis.Redis('localhost')
 
 
@@ -26,8 +26,8 @@ class circuitBreaker(object):
 
 
 	def createHashEntry(self,*args):
-		if not redisDB.hexists("circuitStatus", args):
-			redisDB.hset("circuitStatus", args, 1)
+		if not redisDB.hexists("circuitStatus", args[0]):
+			redisDB.hset("circuitStatus", args[0], 1)
 		return
 
 
@@ -42,7 +42,7 @@ class circuitBreaker(object):
 															#make hash entry for service if it
 		self.createHashEntry(*args)								#doesnt exist in circuit
 
-		if int(redisDB.hget("circuitStatus", args)) == 1:	#check if circuit is live
+		if int(redisDB.hget("circuitStatus", args[0])) == 1:	#check if circuit is live
 			print "CIRCUIT IS LIVE"
 			servResp = requests.post(*args, **kwargs)		#actual post request
 			code = servResp.status_code
@@ -75,7 +75,7 @@ class circuitBreaker(object):
 		
 		self.createHashEntry(*args)
 
-		if int(redisDB.hget("circuitStatus", args)) == 1:
+		if int(redisDB.hget("circuitStatus", args[0])) == 1:
 			print "CIRCUIT IS LIVE"
 			servResp = requests.get(*args, **kwargs)
 			code = servResp.status_code							#SAME CODE BLOCK AS ABOVE
@@ -86,7 +86,7 @@ class circuitBreaker(object):
 
 				pickleParams = pickle.dumps(kwargs['params'])
 
-				serviceList = args[0]+"firstFail"
+				serviceList = args[0]+"1"
 				print serviceList
 				redisDB.lpush(serviceList,pickleParams)
 				print "KWARGS ABOVE"
@@ -114,10 +114,13 @@ class circuitBreaker(object):
 
 	def trip(self,*args):
 		print "Ooops I tripped"
-		print args
-		redisDB.hset("circuitStatus", args, 0)				#trip the circuit for that service
-		redisDB.set("failedReq", 0)							#reset counters
-		redisDB.set("successReq", 0)						#rolling timed counters to be used to scale
+		print args[0]
+		redisDB.hset("circuitStatus", args[0], 0)
+											#trip the circuit for that service
+		redisDB.set("failedReq", 0)							
+											#reset counters
+		redisDB.set("successReq", 0)						
+								   #rolling timed counters to be used to scale
 		return 0
 
 
@@ -126,7 +129,7 @@ class circuitBreaker(object):
 	def updateStatus(self,result,*args):
 
 		if result in FAIL_CODES:
-			redisDB.incr("failedReq")						#increment respective counters
+			redisDB.incr("failedReq")			#increment respective counters
 		elif result in PASS_CODES:
 			redisDB.incr("successReq")
 
@@ -134,26 +137,30 @@ class circuitBreaker(object):
 		numSuccess = int(redisDB.get("successReq"))
 		numFail = int(redisDB.get("failedReq"))
 
+		print numSuccess
+		print numFail
+
 
 		if numFail == 0 and numSuccess == 0:
 			print "ALWAYS HERE"
-			successRate = 100
+			successRate = 100.0
 		else:
-			successRate = 100*(numSuccess/(numSuccess+numFail))	#calculate successrate
+			successRate = (100.0 * numSuccess / (numSuccess + numFail))	#calculate successrate
+			print successRate
 
+		print successRate
 
-		if successRate > TOLERANCE_THRESHOLD:				#WOOHOO still not failing
+		if successRate > TOLERANCE_THRESHOLD:		#WOOHOO still not failing
 			return 1
 
 		else:
-			return self.trip(*args)								#shucks trip me
+			return self.trip(*args)							#shucks trip me
 
 
 
 	def upCircuit(self,*args):
-		print "upping the circuit"
-		print args[0]
-		redisDB.hset("circuitStatus", args, 1)
+		print "Closing the circuit"
+		redisDB.hset("circuitStatus", args[0], 1)
 		return
 
 	def popList(self, url, first, second):
@@ -177,51 +184,47 @@ class circuitBreaker(object):
 		#proceed to next chunk if failure rate comes down.
 		#if not send an email to the service or something 
 		print "Restoring"
-		redisDB.hset("circuitStatus", args, 1)				#everything is rosey so restore
+		redisDB.hset("circuitStatus", args[0], 1)				#everything is rosey so restore
 		return
 
 	def getRestore(self,*args):
 		print "Restoring GET"
 		
-		firstQueue = args[0]+'firstFail'
-		secondQueue = args[0]+'secondFail'
-		thirdQueue = args[0]+'thirdFail'
-		permQueue = args[0]+'neverPass'
+		firstQueue = args[0]+'1'
+		secondQueue = args[0]+'2'
 
 		lenFail_1 = redisDB.llen(firstQueue)
 
 		lenFail_2 = self.popList(args[0],firstQueue,secondQueue)
 
+		sleep = 2
+		q1=1
+		q2=2
+		for i in range(0, ITERATIONS):
+			sleep=sleep*i
+			time.sleep(sleep)
+			if float(lenFail_1-lenFail_2)/float(lenFail_1) >= 0.5 :
+				print "Cleared on Iteration "+str(i)
+				print "\n\n\n\n"
+				self.upCircuit(*args)
+				self.flushList(args[0]+str(q2))
+				return
 
-		if (lenFail_1 - lenFail_2)/lenFail_1 > .5 :
-			print "First Iteration"
-			self.upCircuit(*args)
-			return
+			else:
+				q1=i+2
+				q2=i+3
+				lenFail_2 = self.popList(args[0],args[0]+str(q1),args[0]+str(q2))
 
-		time.sleep(10)
 
-		lenFail_3 = self.popList(args[0],secondQueue,thirdQueue)
-
-		if (lenFail_1 - lenFail_3)/lenFail_1 > .5 :
-			print "Second Iteration"
-			self.upCircuit(*args)
-			return
-
-		time.sleep(20)
-
-		lenPermaFail = self.popList(args[0],thirdQueue,permQueue)
-
-		if (lenFail_1 - lenPermaFail)/lenFail_1 > .5:
-			print "Third Iteration"
-			self.upCircuit(*args)
-			return
 
 		return
 
+	def flushList(self,key):
 
+		for i in range (0, redisDB.llen(key)):
+			redisDB.lpop(key)
 
-
-
+		return
 
 
 

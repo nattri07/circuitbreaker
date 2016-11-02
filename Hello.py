@@ -110,14 +110,14 @@ def trippyStuff():
 	postStatus = request.form['postHello']
 
 	if getStatus == 'trip':
-		redisDB.hset('circuitStatus', "('http://127.0.0.1:5000/gethello',)", 0)
+		redisDB.hset('circuitStatus', 'http://127.0.0.1:5000/gethello', 0)
 	else:
-		redisDB.hset('circuitStatus', "('http://127.0.0.1:5000/gethello',)", 1)
+		redisDB.hset('circuitStatus', 'http://127.0.0.1:5000/gethello', 1)
 
 	if postStatus == 'trip':
-		redisDB.hset('circuitStatus', "('http://127.0.0.1:5000/hello',)", 0)
+		redisDB.hset('circuitStatus', 'http://127.0.0.1:5000/hello', 0)
 	else:
-		redisDB.hset('circuitStatus', "('http://127.0.0.1:5000/hello',)", 1)
+		redisDB.hset('circuitStatus', 'http://127.0.0.1:5000/hello', 1)
 	
 
 	return redirect('/')
