@@ -7,7 +7,8 @@ from flask import jsonify, redirect
 from cb.circuitbreaker import circuitBreaker
 from flask_sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
-from config import *
+from config import SECRET_KEY, SQLALCHEMY_TRACK_MODIFICATIONS, DSN_URL,\
+GET_URL, POST_URL
 
 
 import redis  				#import for demo function
