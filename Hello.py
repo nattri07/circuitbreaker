@@ -175,20 +175,28 @@ def gethello():
 
 	name = request.args['yourname']
 
-	num = random.randrange(0, 3)
+	num = random.randrange(0, 6)
 
 	if num == 0:
 
-		return jsonify({'Message': 'Sucbess', 'Name': name}), 200
+		return jsonify({'Message': 'Success 200', 'Name': name}), 200
 
 	elif num == 1:
 
-		return jsonify({'Message': '400 Errors', 'Name': name}), 400
+		return jsonify({'Message': 'Success 201', 'Name': name}), 201
 
 	elif num == 2:
 
-		return jsonify({'Message': '500 Errors', 'Name': name}), 500
+		return jsonify({'Message': '410 Errors', 'Name': name}), 410
+	elif num == 3:
 
+		return jsonify({'Message': '502 Errors', 'Name': name}), 502
+	elif num == 4:
+
+		return jsonify({'Message': '503 Errors', 'Name': name}), 503
+	elif num == 5:
+
+		return jsonify({'Message': '504 Errors', 'Name': name}), 504
 
 
 
@@ -197,7 +205,7 @@ def gethello():
 @app.route('/hello', methods=['POST'])
 def hello():
 
-	num = random.randrange(0, 3)
+	num = random.randrange(0, 6)
 	name = request.form['yourname']
 	email = request.form['youremail']
 	reqType = "POST"
@@ -207,15 +215,26 @@ def hello():
 		newStuff = stuff(name, email, reqType)
 		db.session.add(newStuff)
 		db.session.commit()
-		return jsonify({'code': 200, "name": name, "email": email}), 200
+		return jsonify({'code': 201, "name": name, "email": email}), 201
 
 	elif num == 1:
-		return jsonify({"code":400, "name": name, "email": email}), 400
 
+		newStuff = stuff(name, email, reqType)
+		db.session.add(newStuff)
+		db.session.commit()
+		return jsonify({'code': 200, "name": name, "email": email}), 200
+	
 	elif num == 2:
-		return jsonify({"code": 500, "name": name, "email": email}), 500
+		return jsonify({"code": 410, "name": name, "email": email}), 410
 
+	elif num == 3:
+		return jsonify({"code": 502, "name": name, "email": email}), 502
 
+	elif num == 4:
+		return jsonify({"code": 503, "name": name, "email": email}), 503
+
+	elif num == 5:
+		return jsonify({"code": 504, "name": name, "email": email}), 504
 
 
 ######################################################################################

@@ -1,16 +1,16 @@
 
 import requests
 import redis
-
+import pickle
 
 ########################################
 # INITIALIZE REDIS and SET CONSTANTS
 ########################################
 
 TOLERANCE_THRESHOLD = 20
-PASS_CODES = {200}
-FAIL_CODES = {500}
-IGNORE_CODES = {}
+PASS_CODES = {200,201}
+FAIL_CODES = {502,503,504}
+IGNORE_CODES = {410}
 
 redisDB = redis.Redis('localhost')
 
@@ -83,6 +83,11 @@ class circuitBreaker(object):
 			print args											#parse in same function to extract
 			if code in FAIL_CODES:								#get / post.
 
+				pickleParams = pickle.dumps(kwargs['params'])
+
+				serviceList = args[0]+"firstFail"
+				print serviceList
+				redisDB.lpush(serviceList,pickleParams)
 				print "KWARGS ABOVE"
 				#push to queue
 
@@ -92,7 +97,7 @@ class circuitBreaker(object):
 
 			if not isLive:
 				print ""
-				self.restore(*args)
+				self.getRestore(*args)
 				print "I RESTORED"
 
 			return servResp
@@ -152,6 +157,32 @@ class circuitBreaker(object):
 		print "Restoring"
 		redisDB.hset("circuitStatus", args, 1)				#everything is rosey so restore
 		return
+
+	def getRestore(self,*args):
+		print "Restoring GET"
+		
+		firstQueue = args[0]+'firstFail'
+		secondQueue = args[0]+'secondFail'
+		thirdQueue = args[0]+'ThirdFail'
+
+		lenFail_1 = redisDB.llen(firstQueue)
+		for i in range (0, lenFail_1):
+			params = pickle.loads(redisDB.lpop(firstQueue))
+			servResp = requests.get(args[0], params)
+			code = servResp.status_code
+			if code in FAIL_CODES:
+				redisDB.lpush(secondQueue,pickle.dumps(params))
+
+
+		redisDB.hset("circuitStatus", args, 1)				#everything is rosey so restore
+		return
+
+
+
+
+
+
+
 
 
 
