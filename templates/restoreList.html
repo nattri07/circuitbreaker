@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Manual Restore</title>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div id = "container">
+	<div class = "title">
+		<h1>Services</h1>
+	</div>
+	        <div id="content">
+                <form method="post" action="{{ url_for('trippyStuff') }}">
+                  <label for="getHello">getHello:</label>
+                  <input type="radio" name="getHello" value="trip"/>Trip<br />
+                  <input type="radio" name="getHello" value="live" checked="checked" />Live<br />
+                  <label for="postHello">postHello:</label>
+                  <input type="radio" name="postHello" value="trip"/>Trip<br />
+                  <input type="radio" name="postHello" value="live" checked="checked" />Live<br />
+                  
+                  <!-- change name of this button -->
+                  <input type="submit" value= "Let's Do This"/> 
+                </form>
+            </div>
+</div>
+</body>
+</html>

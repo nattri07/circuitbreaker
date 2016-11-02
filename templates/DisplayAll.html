@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+         <title>Display All</title>
+        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<a href="{{url_for('form')}}">Back To Home</a>
+<div align="center">
+
+ <table cellspacing="0">
+         <thead>
+            <tr>
+               <th>Name</th>
+               <th>Email</th>
+               <th>Type</th>
+            </tr>
+         </thead>
+         
+         <tbody>
+            {% for entry in entries %}
+               <tr>
+                  <td>{{ entry.name }}</td>
+                  <td>{{ entry.email }}</td>
+                  <td>{{ entry.reqType }}</td>
+               </tr>
+            {% endfor %}
+         </tbody>
+      </table>
+      </div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <title>Circuit Breaker</title>
+        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    <body>
+        <div id="container">
+            <div class="title">
+                <h1>Post Request</h1>
+            </div>
+            <div id="content">
+                <form method="post" action="{{ url_for('postcaller') }}">
+                  <label for="yourname">Please enter your name:</label>
+                  <input type="text" name="yourname" /><br />
+                  <label for="youremail">Please enter your email:</label>
+                  <input type="text" name="youremail" /><br />
+                  <input type="submit" />
+                </form>
+            </div>
+
+            <div class="title">
+                <h1>Get Request</h1>
+            </div>
+
+            <div id="content">
+                <form method="get" action="{{url_for('getcaller')}}">
+                    <label for="yourname">Please enter your name:</label>
+                    <input type="text" name="yourname" /><br />
+                    <input type="submit" />
+                </form>
+            </div>
+
+            <div class="title">
+                <h1>Fire Tests</h1>
+            </div>
+            <div id="content">
+                <form method="get" action="{{url_for('superfire')}}">
+                <input type="submit"/>
+                </form>
+            </div>
+
+            </div>
+        </div>
+    </body>
+</html>
+ 
