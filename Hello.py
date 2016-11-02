@@ -97,7 +97,6 @@ def getcaller():
 ##################################################################
 
 @app.route('/manualControl')
-
 def manualControl():
 
 	return render_template('restoreList.html')
@@ -106,7 +105,6 @@ def manualControl():
 
 
 @app.route('/trippyStuff', methods=['POST'])
-
 def trippyStuff():
 
 	getStatus = request.form['getHello']
@@ -176,7 +174,6 @@ def superfire():
 
 #GET simulation
 @app.route('/gethello', methods=['GET'])
-
 def gethello():
 
 	name = request.args['yourname']
@@ -232,7 +229,6 @@ def hello():
 #scaled to implement a queue of live requests
 
 @app.route('/serviceDown', methods=['POST'])
-
 def serviceDown():
 	return render_template("400.html")
 
