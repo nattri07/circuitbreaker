@@ -59,7 +59,7 @@ class circuitBreaker(object):
 
 		else:
 			print "CIRCUIT NOT LIVE"
-			return requests.post("http://127.0.0.1:5000/serviceDown", **kwargs)
+			return requests.post(DOWN_URL, **kwargs)
 
 			### post req to servicedown to be replaced with live queue implementation for scaling
 
@@ -103,7 +103,7 @@ class circuitBreaker(object):
 
 		else:
 			print "CIRCUIT NOT LIVE"
-			return requests.post("http://127.0.0.1:5000/serviceDown", **kwargs)
+			return requests.post(DOWN_URL, **kwargs)
 
 
 
