@@ -4,7 +4,7 @@ import string
 import random
 from flask import request, json, Flask, render_template
 from flask import jsonify, redirect
-from cb import circuitbreaker
+from cb.circuitbreaker import circuitBreaker
 from flask_sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
 
@@ -45,7 +45,7 @@ class stuff(db.Model):
 		self.reqType = reqType
 
 
-
+cb=circuitBreaker()
 
 
 
@@ -53,6 +53,7 @@ class stuff(db.Model):
 @app.route('/index')
 @app.route('/')
 def form():
+
     return render_template('form_submit.html')
 
 
@@ -69,7 +70,7 @@ def postcaller():
 	params = dict(yourname=name, youremail=email)
 
 	url_params = urllib.urlencode(params)
-	callServ = circuitbreaker.postreq(
+	callServ = cb.postreq(
 										"http://127.0.0.1:5000/hello",
 										headers={'Content-Type' : 'application/x-www-form-urlencoded'}, # Form type
 										data=url_params) # post data
@@ -84,9 +85,7 @@ def postcaller():
 def getcaller():
 
 	sentry.captureMessage(request)
-
-	callServ = circuitbreaker.getreq('http://127.0.0.1:5000/gethello', params=request.args)
-
+	callServ = cb.getreq('http://127.0.0.1:5000/gethello', params=request.args)
 	sentry.captureMessage(callServ)
 
 	return callServ._content
@@ -132,10 +131,8 @@ def trippyStuff():
 @app.route('/superfire')
 def superfire():
 
-
-
 	for i in range(1, 50):
-		num = random.randrange(1, 3)
+		num = random.randrange(1, 3)			#randomly issue post or get request
 		if num == 1:
 
 			#random string generator
@@ -143,23 +140,23 @@ def superfire():
 			email = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(10)])
 			reqType = "POST"
 
-
 			params = dict(yourname=name,
 						youremail=email,
 						reqType=reqType)
 
 			url_params = urllib.urlencode(params)
-			callServ = circuitbreaker.postreq(
+			callServ = cb.postreq(
 					"http://127.0.0.1:5000/hello",
 					headers={'Content-Type' : 'application/x-www-form-urlencoded'}, # Form type
 					data=params # post data
 					)
+
 			sentry.captureMessage(callServ)
 
 		elif num == 2:
 
 			name = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(5)])
-			callServ = circuitbreaker.getreq('http://127.0.0.1:5000/gethello', params={'yourname':name})
+			callServ = cb.getreq('http://127.0.0.1:5000/gethello', params={'yourname':name})
 
 			sentry.captureMessage(callServ)
 
@@ -182,7 +179,7 @@ def gethello():
 
 	if num == 0:
 
-		return jsonify({'Message': 'Success', 'Name': name}), 200
+		return jsonify({'Message': 'Sucbess', 'Name': name}), 200
 
 	elif num == 1:
 
