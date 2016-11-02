@@ -157,7 +157,7 @@ class circuitBreaker(object):
 	def upCircuit(self,*args):
 		print "Closing the circuit"
 		redisDB.hset("circuitStatus", args[0], 1)
-		return
+		return None
 
 	def popList(self, url, first, second):
 
