@@ -7,23 +7,19 @@ from flask import jsonify, redirect
 from cb.circuitbreaker import circuitBreaker
 from flask_sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
-
+from config import *
 
 
 import redis  				#import for demo function
 
 
 
-DSN_URL = 'https://c6e82df45a6b4362a50f95a053d6d949:4918d4a757574a90812d7c4236adaa72@sentry.io/110511'
+
 
 
 # Initialize the Flask application
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite3'
-app.config['SECRET_KEY'] = "random string"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-
-
+app.config.from_object('config')
 sentry = Sentry(app, logging=True, level=logging.INFO, dsn=DSN_URL)
 
 redisDB = redis.Redis('localhost')				#dont need this in app as such

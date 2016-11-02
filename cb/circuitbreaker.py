@@ -3,16 +3,12 @@ import requests
 import redis
 import pickle
 import time
-
+from config import *
 ########################################
 # INITIALIZE REDIS and SET CONSTANTS
 ########################################
 
-TOLERANCE_THRESHOLD = 70
-PASS_CODES = {200, 201}
-FAIL_CODES = {502, 503, 504}
-IGNORE_CODES = {410}
-ITERATIONS = 3
+
 redisDB = redis.Redis('localhost')
 
 
