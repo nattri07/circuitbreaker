@@ -2,6 +2,7 @@
 import requests
 import redis
 import pickle
+import time
 
 ########################################
 # INITIALIZE REDIS and SET CONSTANTS
@@ -98,8 +99,10 @@ class circuitBreaker(object):
 			if not isLive:
 				print ""
 				self.getRestore(*args)
-				print "I RESTORED"
+				print "I RAN RESTORE"
 
+			print servResp
+			print "\n\n\n"
 			return servResp
 
 		else:
@@ -111,6 +114,7 @@ class circuitBreaker(object):
 
 	def trip(self,*args):
 		print "Ooops I tripped"
+		print args
 		redisDB.hset("circuitStatus", args, 0)				#trip the circuit for that service
 		redisDB.set("failedReq", 0)							#reset counters
 		redisDB.set("successReq", 0)						#rolling timed counters to be used to scale
@@ -146,7 +150,25 @@ class circuitBreaker(object):
 
 
 
+	def upCircuit(self,*args):
+		print "upping the circuit"
+		print args[0]
+		redisDB.hset("circuitStatus", args, 1)
+		return
 
+	def popList(self, url, first, second):
+
+		len1 = redisDB.llen(first)
+		for i in range (0,len1):
+			print "Popping"
+			params = pickle.loads(redisDB.lpop(first))
+			servResp = requests.get(url, params)
+			code = servResp.status_code
+			print code
+			if code in FAIL_CODES:
+				redisDB.lpush(second, pickle.dumps(params))
+
+		return redisDB.llen(second)
 
 	def restore(self,*args):
 		#execute restore logic based upon queue implementation
@@ -163,18 +185,37 @@ class circuitBreaker(object):
 		
 		firstQueue = args[0]+'firstFail'
 		secondQueue = args[0]+'secondFail'
-		thirdQueue = args[0]+'ThirdFail'
+		thirdQueue = args[0]+'thirdFail'
+		permQueue = args[0]+'neverPass'
 
 		lenFail_1 = redisDB.llen(firstQueue)
-		for i in range (0, lenFail_1):
-			params = pickle.loads(redisDB.lpop(firstQueue))
-			servResp = requests.get(args[0], params)
-			code = servResp.status_code
-			if code in FAIL_CODES:
-				redisDB.lpush(secondQueue,pickle.dumps(params))
+
+		lenFail_2 = self.popList(args[0],firstQueue,secondQueue)
 
 
-		redisDB.hset("circuitStatus", args, 1)				#everything is rosey so restore
+		if (lenFail_1 - lenFail_2)/lenFail_1 > .5 :
+			print "First Iteration"
+			self.upCircuit(*args)
+			return
+
+		time.sleep(10)
+
+		lenFail_3 = self.popList(args[0],secondQueue,thirdQueue)
+
+		if (lenFail_1 - lenFail_3)/lenFail_1 > .5 :
+			print "Second Iteration"
+			self.upCircuit(*args)
+			return
+
+		time.sleep(20)
+
+		lenPermaFail = self.popList(args[0],thirdQueue,permQueue)
+
+		if (lenFail_1 - lenPermaFail)/lenFail_1 > .5:
+			print "Third Iteration"
+			self.upCircuit(*args)
+			return
+
 		return
 
 
