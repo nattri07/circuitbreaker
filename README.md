@@ -12,6 +12,7 @@ To implement a circuit breaker that trips the circuit when the drop rate in a se
 ## Usage
 
 1. Download the cb module
+2. Run a redis server instance `redis-server`
 2. Import the circuitBreaker module into your code
 ```
 from cb.circuitbreaker import circuitBreaker
