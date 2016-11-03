@@ -84,10 +84,6 @@ class circuitBreaker(object):
 				self.getRestore(*args)
 				print "I RAN RESTORE"
 
-			print servResp
-			print "\n\n\n"
-			return servResp
-
 		else:
 			print "CIRCUIT NOT LIVE"
 			return requests.post(DOWN_URL, **kwargs)
@@ -116,16 +112,11 @@ class circuitBreaker(object):
 		numSuccess = int(self.redisDB.get("successReq"))
 		numFail = int(self.redisDB.get("failedReq"))
 
-		print numSuccess
-		print numFail
-
-
 		if numFail == 0 and numSuccess == 0:
 			successRate = 100.0
 		else:
 			successRate = (100.0 * numSuccess / (numSuccess + numFail))	
 			#calculate successrate
-			print successRate
 
 		print successRate
 
