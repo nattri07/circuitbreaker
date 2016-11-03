@@ -18,58 +18,55 @@ class circuitBreaker(object):
 			self.redisDB.hset("circuitStatus", args[0], 1)
 		return
 
-
-
-
 	###################
 
-	#function to handle post requests
+	# function to handle post requests
 
 	def postreq(self, *args, **kwargs):
 
-															#make hash entry for service if it
-		self.createHashEntry(*args)								#doesnt exist in circuit
-
-		if int(self.redisDB.hget("circuitStatus", args[0])) == 1:	#check if circuit is live
+										# make hash entry for service if it
+		self.createHashEntry(*args)		# doesnt exist in circuit
+		#check if circuit is live
+		if int(self.redisDB.hget("circuitStatus", args[0])) == 1:	
 			print "CIRCUIT IS LIVE"
-			servResp = requests.post(*args, **kwargs)		#actual post request
+			servResp = requests.post(*args, **kwargs)	# actual post request
 			code = servResp.status_code
 
-			if code in FAIL_CODES:							#code block to push 500 error series
-				pass 										#into queue
-				#push to queue
+			if code in FAIL_CODES:		# code block to push 500 error series
+				pass 					# into queue
+				# push to queue
 
-			#if code in IGNORE_CODES:						#custom responses will be handled here
-				# do something													
+			#if code in IGNORE_CODES:  # custom responses will be handled here
+				# do something		
 
-			isLive = self.updateStatus(code, *args)				#update service metrics and issue trip
+			# update service metrics and issue trip
+			isLive = self.updateStatus(code, *args)				
 			if not isLive:
 				print ""
 				self.restore(*args)
 
-			return servResp									#return control to user
+			return servResp							# return control to user
 
 		else:
 			print "CIRCUIT NOT LIVE"
 			return requests.post(DOWN_URL, **kwargs)
 
-			### post req to servicedown to be replaced with live queue implementation for scaling
+			# post req to servicedown to be replaced with 
+			# live queue implementation for scaling
 
 
-
-	#function to handle get requests
-
+	# function to handle get requests
 	def getreq(self, *args, **kwargs):
 		self.createHashEntry(*args)
 
 		if int(self.redisDB.hget("circuitStatus", args[0])) == 1:
 			print "CIRCUIT IS LIVE"
 			servResp = requests.get(*args, **kwargs)
-			code = servResp.status_code							#SAME CODE BLOCK AS ABOVE
-																#KILL ME BUT NO WORK AROUND
-																#different args and kwargs so cant
-			print args											#parse in same function to extract
-			if code in FAIL_CODES:								#get / post.
+			code = servResp.status_code	  # SAME CODE BLOCK AS ABOVE
+										  # KILL ME BUT NO WORK AROUND
+										  # different args and kwargs so cant
+			print args  				  # parse in same function to extract
+			if code in FAIL_CODES:		  # GET / POST.
 
 				pickleParams = pickle.dumps(kwargs['params'])
 
@@ -96,20 +93,16 @@ class circuitBreaker(object):
 			return requests.post(DOWN_URL, **kwargs)
 
 
-
-
 	def trip(self, *args):
 		print "Ooops I tripped"
 		print args[0]
 		self.redisDB.hset("circuitStatus", args[0], 0)
-											#trip the circuit for that service
+										# trip the circuit for that service
 		self.redisDB.set("failedReq", 0)							
-											#reset counters
+										# reset counters
 		self.redisDB.set("successReq", 0)						
-								   #rolling timed counters to be used to scale
+								  # rolling timed counters to be used to scale
 		return 0
-
-
 
 
 	def updateStatus(self, result, *args):
@@ -130,7 +123,8 @@ class circuitBreaker(object):
 		if numFail == 0 and numSuccess == 0:
 			successRate = 100.0
 		else:
-			successRate = (100.0 * numSuccess / (numSuccess + numFail))	#calculate successrate
+			successRate = (100.0 * numSuccess / (numSuccess + numFail))	
+			#calculate successrate
 			print successRate
 
 		print successRate
@@ -142,11 +136,11 @@ class circuitBreaker(object):
 			return self.trip(*args)							#shucks trip me
 
 
-
 	def upCircuit(self, *args):
 		print "Closing the circuit"
 		self.redisDB.hset("circuitStatus", args[0], 1)
 		return None
+
 
 	def popList(self, url, first, second):
 
@@ -162,14 +156,16 @@ class circuitBreaker(object):
 
 		return self.redisDB.llen(second)
 
+
 	def restore(self, *args):
-		#execute restore logic based upon queue implementation
-		#trigger queue ----> iterate incrementally till threshold comes down
-		#check for status
-		#proceed to next chunk if failure rate comes down.
-		#if not send an email to the service or something 
+		'''execute restore logic based upon queue implementation
+		- trigger queue ----> iterate incrementally till threshold comes down
+		- check for status
+		- proceed to next chunk if failure rate comes down.
+		- if not send an email to the service or something '''
 		print "Restoring"
-		self.redisDB.hset("circuitStatus", args[0], 1)				#everything is rosey so restore
+		self.redisDB.hset("circuitStatus", args[0], 1)	
+		# everything is rosey so restore
 		return
 
 
