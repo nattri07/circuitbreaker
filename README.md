@@ -5,6 +5,10 @@
 To implement a circuit breaker that trips the circuit when the drop rate in a service is higher than a defined parameter. Also implements the immediate restore logic when recovering from a tripped state.
 
 
+##Setup
+```pip install -r /path/to/requirements.txt```
+
+
 ## Usage
 
 1. Download the cb module
@@ -16,7 +20,7 @@ from cb.circuitbreaker import circuitBreaker
 ```
 cb = circuitBreaker()
 ```
-4. Instead of standard ``http requests```, use ```cb.getReq``` or ```cb.postReq```
+4. Instead of standard `http requests`, use `cb.getReq` or `cb.postReq`
 5. Takes care drops and runs restore when needed. Change configs in cb/config.py to customize
 
 
