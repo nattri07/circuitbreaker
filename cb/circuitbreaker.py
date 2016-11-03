@@ -1,8 +1,8 @@
-
-import requests
-import redis
 import pickle
 import time
+import requests
+import redis
+
 from config import *
 
 class circuitBreaker(object):
@@ -13,7 +13,7 @@ class circuitBreaker(object):
 		self.instance = ""
 
 
-	def createHashEntry(self,*args):
+	def createHashEntry(self, *args):
 		if not self.redisDB.hexists("circuitStatus", args[0]):
 			self.redisDB.hset("circuitStatus", args[0], 1)
 		return
@@ -25,7 +25,7 @@ class circuitBreaker(object):
 
 	#function to handle post requests
 
-	def postreq(self,*args, **kwargs):
+	def postreq(self, *args, **kwargs):
 
 															#make hash entry for service if it
 		self.createHashEntry(*args)								#doesnt exist in circuit
@@ -40,9 +40,9 @@ class circuitBreaker(object):
 				#push to queue
 
 			#if code in IGNORE_CODES:						#custom responses will be handled here
-				#do something													
+				# do something													
 
-			isLive = self.updateStatus(code,*args)				#update service metrics and issue trip
+			isLive = self.updateStatus(code, *args)				#update service metrics and issue trip
 			if not isLive:
 				print ""
 				self.restore(*args)
@@ -59,8 +59,7 @@ class circuitBreaker(object):
 
 	#function to handle get requests
 
-	def getreq(self,*args, **kwargs):
-		
+	def getreq(self, *args, **kwargs):
 		self.createHashEntry(*args)
 
 		if int(self.redisDB.hget("circuitStatus", args[0])) == 1:
@@ -76,11 +75,10 @@ class circuitBreaker(object):
 
 				serviceList = args[0]+"1"
 				print serviceList
-				self.redisDB.lpush(serviceList,pickleParams)
-				print "KWARGS ABOVE"
+				self.redisDB.lpush(serviceList, pickleParams)
 				#push to queue
 
-			isLive = self.updateStatus(code,*args)
+			isLive = self.updateStatus(code, *args)
 			
 			print isLive
 
@@ -100,7 +98,7 @@ class circuitBreaker(object):
 
 
 
-	def trip(self,*args):
+	def trip(self, *args):
 		print "Ooops I tripped"
 		print args[0]
 		self.redisDB.hset("circuitStatus", args[0], 0)
@@ -114,10 +112,10 @@ class circuitBreaker(object):
 
 
 
-	def updateStatus(self,result,*args):
+	def updateStatus(self, result, *args):
 
 		if result in FAIL_CODES:
-			self.redisDB.incr("failedReq")			#increment respective counters
+			self.redisDB.incr("failedReq")		#increment respective counters
 		elif result in PASS_CODES:
 			self.redisDB.incr("successReq")
 
@@ -130,7 +128,6 @@ class circuitBreaker(object):
 
 
 		if numFail == 0 and numSuccess == 0:
-			print "ALWAYS HERE"
 			successRate = 100.0
 		else:
 			successRate = (100.0 * numSuccess / (numSuccess + numFail))	#calculate successrate
@@ -146,7 +143,7 @@ class circuitBreaker(object):
 
 
 
-	def upCircuit(self,*args):
+	def upCircuit(self, *args):
 		print "Closing the circuit"
 		self.redisDB.hset("circuitStatus", args[0], 1)
 		return None
@@ -154,7 +151,7 @@ class circuitBreaker(object):
 	def popList(self, url, first, second):
 
 		len1 = self.redisDB.llen(first)
-		for i in range (0,len1):
+		for i in range(0, len1):
 			print "Popping"
 			params = pickle.loads(self.redisDB.lpop(first))
 			servResp = requests.get(url, params)
@@ -165,7 +162,7 @@ class circuitBreaker(object):
 
 		return self.redisDB.llen(second)
 
-	def restore(self,*args):
+	def restore(self, *args):
 		#execute restore logic based upon queue implementation
 		#trigger queue ----> iterate incrementally till threshold comes down
 		#check for status
@@ -175,41 +172,44 @@ class circuitBreaker(object):
 		self.redisDB.hset("circuitStatus", args[0], 1)				#everything is rosey so restore
 		return
 
-	def getRestore(self,*args):
+
+	def getRestore(self, *args):
 		print "Restoring GET"
 		
-		firstQueue = args[0]+'1'
-		secondQueue = args[0]+'2'
+		firstQueue = args[0] + '1'
+		secondQueue = args[0] + '2'
 
 		lenFail_1 = self.redisDB.llen(firstQueue)
 
-		lenFail_2 = self.popList(args[0],firstQueue,secondQueue)
+		lenFail_2 = self.popList(args[0], firstQueue, secondQueue)
 
 		sleep = 2
-		q1=1
-		q2=2
+		q1 = 1
+		q2 = 2
 		for i in range(0, ITERATIONS):
-			sleep=sleep*i
+			sleep = sleep * i
 			time.sleep(sleep)
-			if float(lenFail_1-lenFail_2)/float(lenFail_1) >= 0.5 :
-				print "Cleared on Iteration "+str(i)
+			if float(lenFail_1 - lenFail_2)/float(lenFail_1) >= 0.5 :
+				print "Cleared on Iteration " + str(i)
 				print "\n\n\n\n"
 				self.upCircuit(*args)
-				self.flushList(args[0]+str(q2))
+				self.flushList(args[0] + str(q2))
 				return
 
 			else:
-				q1=i+2
-				q2=i+3
-				lenFail_2 = self.popList(args[0],args[0]+str(q1),args[0]+str(q2))
+				q1 = i + 2
+				q2 = i + 3
+				lenFail_2 = self.popList(args[0], args[0] + str(q1),
+										args[0] + str(q2))
 
 
 
 		return
 
-	def flushList(self,key):
 
-		for i in range (0, self.redisDB.llen(key)):
+	def flushList(self, key):
+
+		for i in range(0, self.redisDB.llen(key)):
 			self.redisDB.lpop(key)
 
 		return

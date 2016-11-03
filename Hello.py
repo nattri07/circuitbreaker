@@ -23,8 +23,8 @@ app = Flask(__name__)
 app.config.from_object('config')
 sentry = Sentry(app, logging=True, level=logging.INFO, dsn=DSN_URL)
 
-redisDB = redis.Redis('localhost')				#dont need this in app as such
-												#here to provide manual control over trip demo
+redisDB = redis.Redis('localhost')			# dont need this in app as such
+							# here to provide manual control over trip demo
 
 
 db = SQLAlchemy(app)
@@ -42,7 +42,7 @@ class stuff(db.Model):
 		self.reqType = reqType
 
 
-cb=circuitBreaker()
+cb = circuitBreaker()
 
 
 
@@ -54,7 +54,7 @@ def form():
     return render_template('form_submit.html')
 
 
-#proxy function to issue post requests
+# Proxy function to issue post requests
 @app.route('/postcaller', methods=['POST'])
 def postcaller():
 
@@ -63,14 +63,14 @@ def postcaller():
 
 	sentry.captureMessage(request)
 
-# our parameters
+# Our parameters
 	params = dict(yourname=name, youremail=email)
 
 	url_params = urllib.urlencode(params)
 	callServ = cb.postreq(
-										"http://127.0.0.1:5000/hello",
-										headers={'Content-Type' : 'application/x-www-form-urlencoded'}, # Form type
-										data=url_params) # post data
+							POST_URL,
+	headers={'Content-Type' : 'application/x-www-form-urlencoded'}, # Form
+							data=url_params) 			# Post data
 
 	sentry.captureMessage(callServ)
 	return callServ._content
@@ -82,7 +82,7 @@ def postcaller():
 def getcaller():
 
 	sentry.captureMessage(request)
-	callServ = cb.getreq('http://127.0.0.1:5000/gethello', params=request.args)
+	callServ = cb.getreq(GET_URL, params=request.args)
 	sentry.captureMessage(callServ)
 
 	return callServ._content
@@ -115,12 +115,11 @@ def trippyStuff():
 		redisDB.hset('circuitStatus', POST_URL, 0)
 	else:
 		redisDB.hset('circuitStatus', POST_URL, 1)
-	
 
 	return redirect('/')
 
-######################################################################################
-######################################################################################
+#############################################################################
+#############################################################################
 
 
 ####function to fire 50 random requests
@@ -129,31 +128,35 @@ def trippyStuff():
 def superfire():
 
 	for i in range(1, 50):
-		num = random.randrange(1, 3)			#randomly issue post or get request
+		num = random.randrange(1, 3)	#randomly issue post or get request
 		if num == 1:
 
 			#random string generator
-			name = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(5)])
-			email = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(10)])
+			name = ''.join([random.choice(string.ascii_letters +\
+					 string.digits) for n in xrange(5)])
+			
+			email = ''.join([random.choice(string.ascii_letters +\
+					 string.digits) for n in xrange(10)])
 			reqType = "POST"
 
 			params = dict(yourname=name,
 						youremail=email,
 						reqType=reqType)
 
-			url_params = urllib.urlencode(params)
 			callServ = cb.postreq(
-					"http://127.0.0.1:5000/hello",
-					headers={'Content-Type' : 'application/x-www-form-urlencoded'}, # Form type
-					data=params # post data
-					)
+				POST_URL,
+				headers={'Content-Type':'application/x-www-form-urlencoded'},
+				data=params # post data
+				)
 
 			sentry.captureMessage(callServ)
 
 		elif num == 2:
 
-			name = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(5)])
-			callServ = cb.getreq('http://127.0.0.1:5000/gethello', params={'yourname':name})
+			name = ''.join([random.choice(string.ascii_letters +\
+					 string.digits) for n in xrange(5)])
+
+			callServ = cb.getreq(GET_URL, params={'yourname':name})
 
 			sentry.captureMessage(callServ)
 
@@ -161,9 +164,9 @@ def superfire():
 
 
 
-#####################################################################################
+#############################################################################
 ##################################### EXTERNAL SERVICE
-#####################################################################################
+#############################################################################
 
 
 #GET simulation
@@ -234,8 +237,8 @@ def hello():
 		return jsonify({"code": 504, "name": name, "email": email}), 504
 
 
-######################################################################################
-######################################################################################
+#############################################################################
+#############################################################################
 
 
 #written as a post method (which captures nothing actually)
@@ -250,6 +253,7 @@ def serviceDown():
 @app.route('/test')
 def test():
 	return render_template('DisplayAll.html',	entries=stuff.query.all())
+
 
 if __name__ == '__main__':
 	db.create_all()
