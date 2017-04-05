@@ -1,11 +1,11 @@
-# hi-world
+# Circuit Breaker
 
 
 ## Scope
 To implement a circuit breaker that trips the circuit when the drop rate in a service is higher than a defined parameter. Also implements the immediate restore logic when recovering from a tripped state.
 
 
-##Setup
+## Setup
 ```pip install -r /path/to/requirements.txt```
 
 
